@@ -49,7 +49,7 @@ def index(request):
 
 def post_detail(request, slug):
     post = Post.objects \
-        .prefetch_related('author') \
+        .select_related('author') \
         .annotate(likes_count=Count('likes')) \
         .fetch_with_tags() \
         .fetch_with_comments() \
@@ -79,8 +79,8 @@ def post_detail(request, slug):
 
     most_popular_tags = Tag.objects.popular()[:5]
 
-    most_popular_posts = Post.objects.popular() \
-            .prefetch_related('author')[:5] \
+    most_popular_posts = Post.objects.popular()[:5] \
+            .prefetch_related('author') \
             .fetch_with_tags() \
             .fetch_with_comments_count()
 
@@ -103,10 +103,10 @@ def tag_filter(request, tag_title):
             .fetch_with_tags() \
             .fetch_with_comments_count()
 
-    related_posts = tag.posts.all() \
+    related_posts = tag.posts.all()[:20] \
                         .annotate(comments_count=Count('comments')) \
-                        .prefetch_related('author') \
-                        .fetch_with_tags()[:20]
+                        .select_related('author') \
+                        .fetch_with_tags()
 
     context = {
         "tag": tag.title,

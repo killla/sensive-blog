@@ -29,7 +29,7 @@ class PostQuerySet(models.QuerySet):
         return self.prefetch_related(Prefetch('tags', queryset=fetched_tags))
 
     def fetch_with_comments(self):
-        fetched_comments = Comment.objects.prefetch_related('author')
+        fetched_comments = Comment.objects.select_related('author')
         return self.prefetch_related(Prefetch('comments', queryset=fetched_comments))
 
 
