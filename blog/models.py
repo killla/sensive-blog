@@ -1,6 +1,39 @@
 from django.db import models
 from django.urls import reverse
 from django.contrib.auth.models import User
+from django.db.models import Count
+from django.db.models import Prefetch
+
+
+class PostQuerySet(models.QuerySet):
+
+    def year(self, year):
+        posts_at_year = self.filter(published_at__year=year).order_by('published_at')
+        return posts_at_year
+
+    def popular(self):
+        popular_posts = self.annotate(likes_count = Count('likes')).order_by('-likes_count')
+        return popular_posts
+
+    def fetch_with_comments_count(self):
+        posts_ids = [post.id for post in self]
+        posts_with_comments = Post.objects.filter(id__in=posts_ids).annotate(comments_count=Count('comments'))
+        ids_and_comments = posts_with_comments.values_list('id', 'comments_count')
+        count_for_id = dict(ids_and_comments)
+        for post in self:
+            post.comments_count = count_for_id[post.id]
+        return self
+
+    def fetch_with_tags(self):
+        fetched_tags = Tag.objects.annotate(posts_count=Count('posts'))
+        return self.prefetch_related(Prefetch('tags', queryset=fetched_tags))
+
+
+class TagQuerySet(models.QuerySet):
+
+    def popular(self):
+        popular_tags = self.annotate(posts_count = Count('posts')).order_by('-posts_count')
+        return popular_tags
 
 
 class Post(models.Model):
@@ -25,6 +58,8 @@ class Post(models.Model):
         verbose_name = 'пост'
         verbose_name_plural = 'посты'
 
+    objects = PostQuerySet.as_manager()
+
 
 class Tag(models.Model):
     title = models.CharField("Тег", max_length=20, unique=True)
@@ -42,6 +77,8 @@ class Tag(models.Model):
         ordering = ["title"]
         verbose_name = 'тег'
         verbose_name_plural = 'теги'
+
+    objects = TagQuerySet.as_manager()
 
 
 class Comment(models.Model):
