@@ -28,6 +28,10 @@ class PostQuerySet(models.QuerySet):
         fetched_tags = Tag.objects.annotate(posts_count=Count('posts'))
         return self.prefetch_related(Prefetch('tags', queryset=fetched_tags))
 
+    def fetch_with_comments(self):
+        fetched_comments = Comment.objects.prefetch_related('author')
+        return self.prefetch_related(Prefetch('comments', queryset=fetched_comments))
+
 
 class TagQuerySet(models.QuerySet):
 
